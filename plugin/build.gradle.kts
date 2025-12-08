@@ -17,7 +17,7 @@ subprojects {
     }
 
     configure<LibraryExtension> {
-        namespace = "com.github.nyxiereal"
+        namespace = "com.github.lampdelivery"
 
         compileSdk = 36
 
@@ -70,4 +70,5 @@ subprojects {
         compileOnly("com.aliucord:Aliuhook:1.1.4")
         compileOnly(libs.kotlin.stdlib)
     }
+
 }
