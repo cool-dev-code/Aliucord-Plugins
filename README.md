@@ -2,5 +2,6 @@
 
 hi
 
-## LocalEditUsers
-Allows you to edit users locally
+## MessageLinkCompact
+
+Embeds message links in dms and servers like DiscordRN
