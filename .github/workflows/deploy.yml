@@ -41,13 +41,15 @@ jobs:
       - name: Build plugins
         run: |
           cd $GITHUB_WORKSPACE/src
-          chmod +x ./gradlew
-          ./gradlew :generateUpdaterJson
-          
-          rm -f $GITHUB_WORKSPACE/builds/*.zip
-          find $GITHUB_WORKSPACE/src -name "*.zip" -path "*/build/outputs/*" -exec cp {} $GITHUB_WORKSPACE/builds/ \;
-          find $GITHUB_WORKSPACE/src $GITHUB_WORKSPACE -name "updater.json" -path "*/build/outputs/*" -exec cp {} $GITHUB_WORKSPACE/builds/ \; || true
-          ls -la $GITHUB_WORKSPACE/builds
+          chmod +x gradlew
+          ./gradlew make generateUpdaterJson
+          shopt -s globstar nullglob
+          for file in **/build/**/*.zip; do
+            cp -v "$file" "$GITHUB_WORKSPACE/builds/"
+          done
+          if [[ -f build/updater.json ]]; then
+            cp -v build/updater.json "$GITHUB_WORKSPACE/builds/"
+          fi
 
       - name: Push builds branch
         run: |
