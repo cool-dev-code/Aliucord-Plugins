@@ -38,18 +38,15 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Build plugins
+      - name: Build
         run: |
           cd $GITHUB_WORKSPACE/src
-          chmod +x gradlew
-          ./gradlew make generateUpdaterJson
-          shopt -s globstar nullglob
-          for file in **/build/**/*.zip; do
-            cp -v "$file" "$GITHUB_WORKSPACE/builds/"
-          done
-          if [[ -f build/updater.json ]]; then
-            cp -v build/updater.json "$GITHUB_WORKSPACE/builds/"
-          fi
+          chmod +x ./gradlew
+          ./gradlew make :generateUpdaterJson
+          
+          rm $GITHUB_WORKSPACE/builds/*.zip
+          cp $GITHUB_WORKSPACE/src/plugin/*/build/outputs/*.zip $GITHUB_WORKSPACE/builds/
+          cp $GITHUB_WORKSPACE/src/build/outputs/updater.json $GITHUB_WORKSPACE/builds/
 
       - name: Push builds branch
         run: |
