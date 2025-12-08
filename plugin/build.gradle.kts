@@ -65,10 +65,10 @@ subprojects {
 
         compileOnly(libs.discord)
         compileOnly(libs.aliucord)
-        compileOnly("com.aliucord:Aliuhook:1.1.4")
         compileOnly(libs.kotlin.stdlib)
     }
 
 }
+
 
 
