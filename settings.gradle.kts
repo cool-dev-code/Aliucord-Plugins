@@ -30,7 +30,6 @@ dependencyResolutionManagement {
 rootProject.name = "aliucord-plugins"
 include(":plugin")
 
-// Add each directory under ./plugins as a separate project
 rootDir.resolve("plugin")
     .listFiles { file -> file.isDirectory && file.resolve("build.gradle.kts").exists() }!!
     .forEach { include(":plugin:${it.name}") }
