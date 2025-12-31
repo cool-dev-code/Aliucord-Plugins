@@ -192,31 +192,29 @@ class ChannelBrowser : Plugin() {
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
             val ctx = parent.context
             val scale = ctx.resources.displayMetrics.density
-            val ph = 0
-            val pv = 0
-            val minH = 0
+            val minH = (48 * scale).toInt() 
+            val sidePadding = (8 * scale).toInt() 
 
             val lp = RecyclerView.LayoutParams(
                 RecyclerView.LayoutParams.MATCH_PARENT,
                 RecyclerView.LayoutParams.WRAP_CONTENT
-            ).apply {
-                leftMargin = 0
-                rightMargin = 0
-                topMargin = 0
-                bottomMargin = 0
-            }
+            )
 
             val row = LinearLayout(ctx).apply {
                 layoutParams = lp
                 orientation = LinearLayout.HORIZONTAL
                 gravity = android.view.Gravity.CENTER_VERTICAL
-                setPadding(ph, pv, ph, pv)
+                setPadding(sidePadding, 0, sidePadding, 0)
                 minimumHeight = minH
                 val attrs = intArrayOf(android.R.attr.selectableItemBackground)
                 val typedArray = ctx.obtainStyledAttributes(attrs)
                 background = typedArray.getDrawable(0)
                 typedArray.recycle()
             }
+
+            val iconLeftMargin = (6 * scale).toInt()
+            val iconRightMargin = (6 * scale).toInt() // More space between icon and text
+            val textLeftMargin = 0 
 
             val icon = ImageView(ctx).apply {
                 val resId = try { com.lytefast.flexinput.R.e.ic_menu_24dp } catch (_: Throwable) { android.R.drawable.ic_menu_sort_by_size }
@@ -228,8 +226,8 @@ class ChannelBrowser : Plugin() {
                 setImageDrawable(drawable)
                 val size = (24 * scale).toInt()
                 layoutParams = LinearLayout.LayoutParams(size, size).apply {
-                    marginStart = 0
-                    marginEnd = (2 * scale).toInt()
+                    leftMargin = iconLeftMargin
+                    rightMargin = iconRightMargin
                     gravity = android.view.Gravity.CENTER_VERTICAL
                 }
             }
@@ -245,7 +243,10 @@ class ChannelBrowser : Plugin() {
                 maxLines = 1
                 ellipsize = android.text.TextUtils.TruncateAt.END
                 gravity = android.view.Gravity.CENTER_VERTICAL
-                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                    leftMargin = textLeftMargin
+                }
+                setPadding(0, 0, 0, 0)
             }
             row.addView(tv)
             return VH(row)
