@@ -1,5 +1,6 @@
 package com.github.lampdelivery
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.view.View
 import android.view.ViewGroup
@@ -182,6 +183,7 @@ class ChannelBrowser : Plugin() {
     ) : RecyclerView.Adapter<ChannelBrowserHeaderAdapter.VH>() {
         class VH(val row: LinearLayout) : RecyclerView.ViewHolder(row)
 
+        @SuppressLint("UseKtx")
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
             val ctx = parent.context
             val scale = ctx.resources.displayMetrics.density
