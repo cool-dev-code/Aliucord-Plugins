@@ -27,20 +27,40 @@ class CustomTimestamp : Plugin() {
             val todaySuffix = settings.getString("todaySuffix", "")
             val yesterdayPrefix = settings.getString("yesterdayPrefix", "Yesterday at ")
             val yesterdaySuffix = settings.getString("yesterdaySuffix", "")
-
-            if (settings.getBool("hideToday", false)) {
-                if (todayPrefix.isNotEmpty()) text = text.replace(todayPrefix, "")
-                if (todaySuffix.isNotEmpty()) text = text.replace(todaySuffix, "")
-            }
-
-            if (settings.getBool("hideYesterday", false)) {
-                if (yesterdayPrefix.isNotEmpty()) text = text.replace(yesterdayPrefix, "")
-                if (yesterdaySuffix.isNotEmpty()) text = text.replace(yesterdaySuffix, "")
-            }
-
             val customFormat = settings.getString("customDateFormat", "MMM dd, yyyy")
             val use24Hour = settings.getBool("use24Hour", false)
             val timeFormat = if (use24Hour) "HH:mm" else "hh:mm a"
+
+            val todayReplacement = settings.getString("todayReplacement", null)
+            if (settings.getBool("hideToday", false)) {
+                if (todayPrefix.isNotEmpty() && text.contains(todayPrefix)) {
+                    val dateStr = SimpleDateFormat(customFormat, Locale.getDefault()).format(Date())
+                    val replacement = when {
+                        todayReplacement != null && todayReplacement.isNotEmpty() ->
+                            todayReplacement.replace("%date%", dateStr) + " "
+                        todayReplacement != null && todayReplacement.isEmpty() -> "" 
+                        else -> dateStr + " "
+                    }
+                    text = text.replace(todayPrefix, replacement)
+                }
+                if (todaySuffix.isNotEmpty()) text = text.replace(todaySuffix, "")
+            }
+
+            val yesterdayReplacement = settings.getString("yesterdayReplacement", null)
+            if (settings.getBool("hideYesterday", false)) {
+                if (yesterdayPrefix.isNotEmpty() && text.contains(yesterdayPrefix)) {
+                    val yesterday = Calendar.getInstance().apply { add(Calendar.DATE, -1) }.time
+                    val dateStr = SimpleDateFormat(customFormat, Locale.getDefault()).format(yesterday)
+                    val replacement = when {
+                        yesterdayReplacement != null && yesterdayReplacement.isNotEmpty() ->
+                            yesterdayReplacement.replace("%date%", dateStr) + " "
+                        yesterdayReplacement != null && yesterdayReplacement.isEmpty() -> "" 
+                        else -> dateStr + " "
+                    }
+                    text = text.replace(yesterdayPrefix, replacement)
+                }
+                if (yesterdaySuffix.isNotEmpty()) text = text.replace(yesterdaySuffix, "")
+            }
             val inputFormats = listOf(
                 "MMM dd, yyyy HH:mm", "dd MMM yyyy HH:mm", "MM/dd/yyyy HH:mm", "dd-MM-yyyy HH:mm", "yyyy/MM/dd HH:mm",
                 "yyyy-MM-dd HH:mm",

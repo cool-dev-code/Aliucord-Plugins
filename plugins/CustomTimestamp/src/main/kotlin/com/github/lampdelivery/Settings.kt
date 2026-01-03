@@ -5,16 +5,32 @@ import com.aliucord.Utils
 import com.aliucord.api.SettingsAPI
 import com.aliucord.fragments.SettingsPage
 import com.discord.views.CheckedSetting
+import android.text.Editable
+import android.text.TextWatcher
+import com.aliucord.views.TextInput
+import com.aliucord.R
 
 class CustomTimestampSettings(private val settings: SettingsAPI) : SettingsPage() {
 
+    private fun addTextInput(hint: String, initial: String, onChange: (String) -> Unit) {
+        val ctx = requireContext()
+        val textInput = TextInput(ctx)
+        textInput.setHint(hint)
+        textInput.getEditText().setText(initial)
+        textInput.getEditText().setSingleLine()
+        textInput.getEditText().addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                onChange(s?.toString() ?: "")
+            }
+        })
+        addView(textInput)
+    }
+
     override fun onViewBound(view: View) {
         super.onViewBound(view)
-
-        setActionBarTitle("Custom Timestamp Settings")
-        setActionBarSubtitle("Customize timestamp display")
-        val ctx = requireContext()
-
+        val todayReplacement = settings.getString("todayReplacement", "")
         val formatOptions = listOf(
             "MMM dd, yyyy",
             "yyyy-MM-dd",
@@ -38,6 +54,7 @@ class CustomTimestampSettings(private val settings: SettingsAPI) : SettingsPage(
         val defaultFormat = "MMM dd, yyyy"
         val currentFormat = settings.getString("customDateFormat", defaultFormat)
         var currentIndex = formatOptions.indexOf(currentFormat).let { if (it == -1) formatOptions.indexOf(defaultFormat) else it }
+        val ctx = requireContext()
         val dateFormatSelector = com.github.lampdelivery.Selector(ctx).apply {
             setLabel("Date Format")
             setValue(formatLabels[currentIndex])
@@ -49,11 +66,35 @@ class CustomTimestampSettings(private val settings: SettingsAPI) : SettingsPage(
                     currentIndex = which
                     setValue(formatLabels[currentIndex])
                     settings.setString("customDateFormat", formatOptions[currentIndex])
+                    Utils.promptRestart("Restart required to apply changes.")
                 }
                 dialog.show((this@CustomTimestampSettings.parentFragmentManager ?: return@OnClickListener), "date_format_selector")
             })
         }
         addView(dateFormatSelector)
+
+        addTextInput(
+            hint = "Today Replacement (leave blank to remove, use %date% for date)",
+            initial = todayReplacement
+        ) {
+            settings.setString("todayReplacement", it)
+            Utils.promptRestart("Restart required to apply changes.")
+        }
+        val space = android.widget.Space(requireContext())
+        space.layoutParams = android.widget.LinearLayout.LayoutParams(
+            android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+            (12 * resources.displayMetrics.density).toInt()
+        )
+        addView(space)
+        val yesterdayReplacement = settings.getString("yesterdayReplacement", "")
+        addTextInput(
+            hint = "Yesterday Replacement (leave blank to remove, use %date% for date)",
+            initial = yesterdayReplacement
+        ) {
+            settings.setString("yesterdayReplacement", it)
+            Utils.promptRestart("Restart required to apply changes.")
+        }
+
         addView(
             Utils.createCheckedSetting(
                 ctx,
@@ -64,10 +105,10 @@ class CustomTimestampSettings(private val settings: SettingsAPI) : SettingsPage(
                 isChecked = settings.getBool("hideToday", false)
                 setOnCheckedListener {
                     settings.setBool("hideToday", it)
+                    Utils.promptRestart("Restart required to apply changes.")
                 }
             }
         )
-
 
         addView(
             Utils.createCheckedSetting(
@@ -79,10 +120,10 @@ class CustomTimestampSettings(private val settings: SettingsAPI) : SettingsPage(
                 isChecked = settings.getBool("hideYesterday", false)
                 setOnCheckedListener {
                     settings.setBool("hideYesterday", it)
+                    Utils.promptRestart("Restart required to apply changes.")
                 }
             }
         )
-
 
         addView(
             Utils.createCheckedSetting(
@@ -94,6 +135,7 @@ class CustomTimestampSettings(private val settings: SettingsAPI) : SettingsPage(
                 isChecked = settings.getBool("use24Hour", false)
                 setOnCheckedListener {
                     settings.setBool("use24Hour", it)
+                    Utils.promptRestart("Restart required to apply changes.")
                 }
             }
         )
