@@ -22,7 +22,6 @@ class CustomTimestamp : Plugin() {
             itemTimestampField.isAccessible = true
             val timestampView = itemTimestampField.get(hook.thisObject) as? android.widget.TextView ?: return@after
             var text = timestampView.text.toString()
-            logger.info("onConfigure timestampView before: $text")
 
             val todayPrefix = settings.getString("todayPrefix", "Today at ")
             val todaySuffix = settings.getString("todaySuffix", "")
@@ -92,7 +91,6 @@ class CustomTimestamp : Plugin() {
             }
 
             timestampView.text = text
-            // logger.info("onConfigure timestampView after: ${timestampView.text}")
         }
     }
 
