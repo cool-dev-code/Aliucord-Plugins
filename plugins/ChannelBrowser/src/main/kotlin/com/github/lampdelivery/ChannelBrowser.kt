@@ -39,10 +39,15 @@ class ChannelBrowser : Plugin() {
         settingsTab = SettingsTab(ChannelBrowserSettings::class.java).withArgs(settings)
         patcher.after<`WidgetChannelListModel$Companion$guildListBuilder$$inlined$forEach$lambda$3`>("invoke") {
             val channel = `$channel`
-            val channelName = channel.name
-            val guildId = try { com.discord.stores.StoreStream.getGuildSelected().selectedGuildId } catch (_: Throwable) { null }
-            if (!settings.channels.contains("$channelName-$guildId")) return@after
-            it.result = null
+            val channelId = try {
+                val idField = channel.javaClass.getDeclaredField("id")
+                idField.isAccessible = true
+                idField.get(channel) as? Long
+            } catch (_: Throwable) { null }
+            val hiddenChannels = settings.getObject("hiddenChannels", mutableListOf<String>()) as MutableList<String>
+            if (channelId != null && hiddenChannels.contains(channelId.toString())) {
+                it.result = null
+            }
         }
         patcher.after<WidgetGuildProfileSheet>("configureTabItems", Long::class.java,
             WidgetGuildProfileSheetViewModel.TabItems::class.java, Boolean::class.java) {
@@ -84,10 +89,6 @@ class ChannelBrowser : Plugin() {
                     setOnClickListener {
                         Utils.openPageWithProxy(lay.context, ChannelBrowserPage(settings, settings.channels))
                     }
-                    // Explicitly override style to prevent ellipsis
-                    maxLines = Integer.MAX_VALUE
-                    ellipsize = null
-                    setSingleLine(false)
                 }
                 lay.addView(browseTv, insertIndex)
             }
@@ -156,10 +157,6 @@ class ChannelBrowser : Plugin() {
                     leftMargin = textLeftMargin
                 }
                 setPadding(0, 0, 0, 0)
-                // Explicitly override style to prevent ellipsis
-                maxLines = Integer.MAX_VALUE
-                ellipsize = null
-                setSingleLine(false)
             }
             row.addView(tv)
             return VH(row)

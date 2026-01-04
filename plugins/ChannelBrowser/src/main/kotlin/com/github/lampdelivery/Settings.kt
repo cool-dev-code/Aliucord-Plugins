@@ -19,21 +19,6 @@ class ChannelBrowserSettings(private val settings: SettingsAPI) : SettingsPage()
             Utils.createCheckedSetting(
                 ctx,
                 CheckedSetting.ViewType.SWITCH,
-                "Enable header (EXPERIMENTAL)",
-                "Show a header in the channel list to mimic RN"
-            ).apply {
-                isChecked = settings.getBool("showHeader", false)
-                setOnCheckedListener {
-                    settings.setBool("showHeader", it)
-                    Utils.promptRestart()
-                }
-            }
-        )
-
-        addView(
-            Utils.createCheckedSetting(
-                ctx,
-                CheckedSetting.ViewType.SWITCH,
                 "Confirm channel actions",
                 "Require confirmation to modify channel list"
             ).apply {
