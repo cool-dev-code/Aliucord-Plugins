@@ -1,6 +1,7 @@
 package com.github.lampdelivery
 
 import android.annotation.SuppressLint
+import com.aliucord.Http
 import android.view.Gravity
 import android.view.View
 import android.content.Context
@@ -18,7 +19,6 @@ class ChannelBrowserPage(val settings: SettingsAPI, val channels: MutableList<St
     private val logger = com.aliucord.Logger("ChannelBrowser")
     private val handler = android.os.Handler(android.os.Looper.getMainLooper())
     private var lastView: View? = null
-    private var gatewayListener: ((String, Any?) -> Unit)? = null
     private fun deepCopyOverrides(orig: Any?): MutableList<MutableMap<String, Any>> {
         val result = mutableListOf<MutableMap<String, Any>>()
         if (orig is List<*>) {
@@ -81,26 +81,6 @@ class ChannelBrowserPage(val settings: SettingsAPI, val channels: MutableList<St
     override fun onViewBound(view: View) {
         lastView = view
         super.onViewBound(view)
-
-        if (gatewayListener == null) {
-            gatewayListener = { eventName, data ->
-                logger.debug("[GatewayListener] Event: $eventName, Data: $data")
-                if (eventName == "USER_GUILD_SETTINGS_UPDATE") {
-                    logger.debug("[GatewayListener] USER_GUILD_SETTINGS_UPDATE received, refreshing UI")
-                    lastView?.let { v ->
-                        handler.post { onViewBound(v) }
-                    }
-                }
-            }
-            try {
-                val storeGateway = Class.forName("com.discord.stores.StoreGatewayConnection").getDeclaredField("INSTANCE").get(null)
-                val addListener = storeGateway.javaClass.getMethod("addEventListener", String::class.java, java.util.function.BiConsumer::class.java)
-                addListener.invoke(storeGateway, "USER_GUILD_SETTINGS_UPDATE", java.util.function.BiConsumer<String, Any?> { event, data -> gatewayListener?.invoke(event, data) })
-                logger.debug("Registered USER_GUILD_SETTINGS_UPDATE gateway listener")
-            } catch (e: Exception) {
-                logger.error("Failed to register gateway listener", e)
-            }
-        }
 
         setActionBarTitle("Browse Channels")
         setActionBarSubtitle(null) 
@@ -405,7 +385,7 @@ class ChannelBrowserPage(val settings: SettingsAPI, val channels: MutableList<St
                         )
                         try {
                             logger.debug("PATCH body: $patchBody")
-                            val req = com.aliucord.Http.Request.newDiscordRNRequest(
+                            val req = Http.Request.newDiscordRNRequest(
                                 "/users/@me/guilds/settings",
                                 "PATCH"
                             )
@@ -458,17 +438,4 @@ class ChannelBrowserPage(val settings: SettingsAPI, val channels: MutableList<St
         linearLayout.addView(row)
     }
 
-    fun cleanupGatewayListener() {
-        if (gatewayListener != null) {
-            try {
-                val storeGateway = Class.forName("com.discord.stores.StoreGatewayConnection").getDeclaredField("INSTANCE").get(null)
-                val removeListener = storeGateway.javaClass.getMethod("removeEventListener", String::class.java, java.util.function.BiConsumer::class.java)
-                removeListener.invoke(storeGateway, "USER_GUILD_SETTINGS_UPDATE", java.util.function.BiConsumer<String, Any?> { event, data -> gatewayListener?.invoke(event, data) })
-                logger.debug("Unregistered USER_GUILD_SETTINGS_UPDATE gateway listener")
-            } catch (e: Exception) {
-                logger.error("Failed to unregister gateway listener", e)
-            }
-            gatewayListener = null
-        }
-    }
 }
