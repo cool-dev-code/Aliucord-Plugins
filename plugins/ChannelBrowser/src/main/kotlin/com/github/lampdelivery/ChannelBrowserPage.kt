@@ -316,7 +316,11 @@ class ChannelBrowserPage(val settings: SettingsAPI, val channels: MutableList<St
         }
             val flags = if (chId != null) channelOverridesMap[chId] ?: 4096 else 4096
             val isHiddenLocally = hiddenChannels.contains(chId)
-            val isCheckedRemote = (flags and 4096) != 0
+            val OPT_IN_CHANNELS_OFF = 1 shl 13
+            val OPT_IN_CHANNELS_ON = 1 shl 14
+            val isOptInOff = (flags and OPT_IN_CHANNELS_OFF) != 0
+            val isOptInOn = (flags and OPT_IN_CHANNELS_ON) != 0
+            val isCheckedRemote = (flags and 4096) != 0 && !isOptInOff && isOptInOn
             val isChecked = !isHiddenLocally && isCheckedRemote
         var suppressChannelListener = BooleanArray(1) { false }
 
@@ -368,7 +372,10 @@ class ChannelBrowserPage(val settings: SettingsAPI, val channels: MutableList<St
                     suppressChannelListener[0] = true
                     Thread {
                         val channelOverrides = mutableMapOf<String, MutableMap<String, Any>>()
-                        val toggledOverride = mutableMapOf<String, Any>("channel_id" to chId!!, "flags" to if (checked) 4096 else 0)
+                        val OPT_IN_CHANNELS_OFF = 1 shl 13
+                        val OPT_IN_CHANNELS_ON = 1 shl 14
+                        val flags = if (checked) (4096 or OPT_IN_CHANNELS_ON) else OPT_IN_CHANNELS_OFF
+                        val toggledOverride = mutableMapOf<String, Any>("channel_id" to chId!!, "flags" to flags)
                         channelOverrides[chId!!] = toggledOverride
                         if (!checked) {
                             if (!hiddenChannels.contains(chId)) hiddenChannels.add(chId!!)
