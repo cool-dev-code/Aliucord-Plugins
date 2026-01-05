@@ -1,11 +1,6 @@
 # ChannelBrowserProto
 
-A proto-based version of the ChannelBrowser Aliucord plugin.
-
-## Features
-- Uses Protocol Buffers for all data serialization/deserialization
-- Example .proto file for channel data
-- Example HTTP request parsing protobuf response
+A protobuf variant of the ChannelBrowser Aliucord plugin.
 
 ## Setup
 - Requires protobuf codegen (see build.gradle.kts)
