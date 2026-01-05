@@ -32,14 +32,11 @@ import androidx.recyclerview.widget.RecyclerView
 
 
 @AliucordPlugin
-class ChannelBrowserProto : Plugin() {
+class ChannelBrowser : Plugin() {
     private var SettingsAPI.channels by settings.delegate(mutableListOf<String>())
-    private lateinit var protoSettingsManager: ChannelBrowserProtoSettingsManager
 
     override fun start(context: Context) {
-        protoSettingsManager = ChannelBrowserProtoSettingsManager(settings, logger)
-        protoSettingsManager.listenForGatewayUpdates()
-        settingsTab = SettingsTab(ChannelBrowserProtoSettings::class.java).withArgs(settings)
+        settingsTab = SettingsTab(ChannelBrowserSettings::class.java).withArgs(settings)
         patcher.after<`WidgetChannelListModel$Companion$guildListBuilder$$inlined$forEach$lambda$3`>("invoke") {
             val channel = `$channel`
             val channelId = try {
@@ -90,7 +87,7 @@ class ChannelBrowserProto : Plugin() {
                     gravity = android.view.Gravity.CENTER_VERTICAL
                     layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
                     setOnClickListener {
-                        Utils.openPageWithProxy(lay.context, ChannelBrowserProtoPage(settings, settings.channels, protoSettingsManager))
+                        Utils.openPageWithProxy(lay.context, ChannelBrowserPage(settings, settings.channels))
                     }
                 }
                 lay.addView(browseTv, insertIndex)

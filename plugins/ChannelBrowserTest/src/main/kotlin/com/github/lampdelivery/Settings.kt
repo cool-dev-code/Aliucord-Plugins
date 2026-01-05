@@ -6,7 +6,7 @@ import com.aliucord.api.SettingsAPI
 import com.aliucord.fragments.SettingsPage
 import com.discord.views.CheckedSetting
 
-class ChannelBrowserProtoSettings(private val settings: SettingsAPI) : SettingsPage() {
+class ChannelBrowserSettings(private val settings: SettingsAPI) : SettingsPage() {
 
     override fun onViewBound(view: View) {
         super.onViewBound(view)
