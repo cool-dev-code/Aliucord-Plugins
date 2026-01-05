@@ -15,5 +15,3 @@ A proto-based version of the ChannelBrowser Aliucord plugin.
 ## Example
 Fetches a protobuf-encoded channel list from a remote server and parses it.
 
----
-
