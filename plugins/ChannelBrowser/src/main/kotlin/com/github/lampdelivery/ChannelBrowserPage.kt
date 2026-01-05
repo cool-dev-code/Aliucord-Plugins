@@ -313,6 +313,19 @@ class ChannelBrowserPage(val settings: SettingsAPI, val channels: MutableList<St
             setPadding(16, 8, 16, 8)
             gravity = Gravity.CENTER_VERTICAL
         }
+        val iconView = ImageView(ctx).apply {
+            try {
+                setImageDrawable(ctx.getDrawable(R.e.ic_channel_text))
+                val scale = ctx.resources.displayMetrics.density
+                val size = (20 * scale).toInt()
+                layoutParams = LinearLayout.LayoutParams(size, size).apply {
+                    setMargins(0, 0, (8 * scale).toInt(), 0)
+                    gravity = Gravity.CENTER_VERTICAL
+                }
+            } catch (_: Throwable) {
+                layoutParams = LinearLayout.LayoutParams(0, 0)
+            }
+        }
         val tv = TextView(ctx, null, 0, R.i.UiKit_Settings_Item_SubText).apply {
             text = chName
             typeface = ResourcesCompat.getFont(ctx, Constants.Fonts.whitney_medium)
@@ -406,6 +419,7 @@ class ChannelBrowserPage(val settings: SettingsAPI, val channels: MutableList<St
                 doAction()
             }
         }
+        row.addView(iconView)
         row.addView(tv)
         row.addView(cb)
         row.alpha = if (!isChecked || grayOut) 0.5f else 1.0f
