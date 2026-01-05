@@ -7,6 +7,3 @@ ChannelBrowser Aliucord plugin (Protobuf)
 - Place your .proto files in `src/main/proto/`
 - Example usage in `ChannelBrowserProto.kt`
 
-## Example
-Fetches a protobuf-encoded channel list from a remote server and parses it.
-
