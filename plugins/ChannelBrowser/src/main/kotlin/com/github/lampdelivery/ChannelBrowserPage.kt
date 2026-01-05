@@ -211,7 +211,10 @@ class ChannelBrowserPage(val settings: SettingsAPI, val channels: MutableList<St
                     catToggle.isEnabled = false
                     Thread {
                         val newOverridesMap = mutableMapOf<String, MutableMap<String, Any>>()
-                        newOverridesMap[catId.toString()] = mutableMapOf("channel_id" to catId.toString(), "flags" to if (checked) 4096 else 0)
+                        val currentFlags = (channelOverridesMap[catId.toString()] ?: 4096)
+                        val muteBit = currentFlags and 0x1
+                        val newFlags = if (checked) (muteBit) else (muteBit or 4096)
+                        newOverridesMap[catId.toString()] = mutableMapOf("channel_id" to catId.toString(), "flags" to newFlags)
                         val localHidden = settings.getObject("hiddenChannels", mutableListOf<String>()) as MutableList<String>
                         val prevHiddenKey = "catPrevHidden_${catId.toString()}"
                         if (checked) {
@@ -314,10 +317,15 @@ class ChannelBrowserPage(val settings: SettingsAPI, val channels: MutableList<St
         } catch (_: Throwable) {
             null
         }
-            val flags = if (chId != null) channelOverridesMap[chId] ?: 4096 else 4096
-            val isHiddenLocally = hiddenChannels.contains(chId)
-            val isCheckedRemote = (flags and 4096) != 0
-            val isChecked = !isHiddenLocally && isCheckedRemote
+        val isHiddenLocally = hiddenChannels.contains(chId)
+        val flags = if (chId != null) {
+            val origFlags = channelOverridesMap[chId] ?: 4096
+            val muteBit = origFlags and 0x1
+            val hiddenBit = if (isHiddenLocally) 4096 else 0
+            muteBit or hiddenBit
+        } else 4096
+        val isCheckedRemote = (flags and 4096) != 0
+        val isChecked = !isHiddenLocally && isCheckedRemote
         var suppressChannelListener = BooleanArray(1) { false }
 
         val row = LinearLayout(ctx).apply {
@@ -437,5 +445,4 @@ class ChannelBrowserPage(val settings: SettingsAPI, val channels: MutableList<St
         row.alpha = if (!isChecked || grayOut) 0.5f else 1.0f
         linearLayout.addView(row)
     }
-
 }
