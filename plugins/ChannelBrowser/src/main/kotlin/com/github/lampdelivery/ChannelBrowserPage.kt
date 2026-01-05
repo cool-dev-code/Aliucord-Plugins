@@ -223,12 +223,12 @@ class ChannelBrowserPage(val settings: SettingsAPI, val channels: MutableList<St
                         // Category override: preserve mute bit
                         val catFlags = channelOverridesMap[catId.toString()] ?: 4096
                         val catMuteBit = catFlags and 0x1
-                        val catNewFlags = if (checked) catMuteBit else (catMuteBit or 4096)
+                        val catNewFlags = if (!checked) catMuteBit else (catMuteBit or 4096)
                         newOverridesMap[catId.toString()] = mutableMapOf("channel_id" to catId.toString(), "flags" to catNewFlags)
                         val localHidden = settings.getObject("hiddenChannels", mutableListOf<String>()) as MutableList<String>
                         val prevHiddenKey = "catPrevHidden_${catId.toString()}"
                         val prevMuteKey = "catPrevMute_${catId.toString()}"
-                        if (checked) {
+                        if (!checked) {
                             val prevHidden = childIds.filter { localHidden.contains(it) }
                             val prevMuted = childIds.filter { id -> (channelOverridesMap[id] ?: 0) and 0x1 != 0 }
                             settings.setObject(prevHiddenKey, prevHidden)
