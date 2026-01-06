@@ -36,10 +36,12 @@ class CustomTimestamp : Plugin() {
                 if (todayPrefix.isNotEmpty() && text.contains(todayPrefix)) {
                     val dateStr = SimpleDateFormat(customFormat, Locale.getDefault()).format(Date())
                     val replacement = when {
-                        todayReplacement != null && todayReplacement.isNotEmpty() ->
+                        todayReplacement != null && todayReplacement.contains("%date%") ->
                             todayReplacement.replace("%date%", dateStr) + " "
+                        todayReplacement != null && todayReplacement.isNotEmpty() ->
+                            todayReplacement + " "
                         todayReplacement != null && todayReplacement.isEmpty() -> "" 
-                        else -> dateStr + " "
+                        else -> "" // Only hide, do not show date
                     }
                     text = text.replace(todayPrefix, replacement)
                 }
@@ -52,10 +54,12 @@ class CustomTimestamp : Plugin() {
                     val yesterday = Calendar.getInstance().apply { add(Calendar.DATE, -1) }.time
                     val dateStr = SimpleDateFormat(customFormat, Locale.getDefault()).format(yesterday)
                     val replacement = when {
-                        yesterdayReplacement != null && yesterdayReplacement.isNotEmpty() ->
+                        yesterdayReplacement != null && yesterdayReplacement.contains("%date%") ->
                             yesterdayReplacement.replace("%date%", dateStr) + " "
+                        yesterdayReplacement != null && yesterdayReplacement.isNotEmpty() ->
+                            yesterdayReplacement + " "
                         yesterdayReplacement != null && yesterdayReplacement.isEmpty() -> "" 
-                        else -> dateStr + " "
+                        else -> "" // Only hide, do not show date
                     }
                     text = text.replace(yesterdayPrefix, replacement)
                 }
