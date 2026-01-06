@@ -41,7 +41,7 @@ class CustomTimestamp : Plugin() {
                         todayReplacement != null && todayReplacement.isNotEmpty() ->
                             todayReplacement + " "
                         todayReplacement != null && todayReplacement.isEmpty() -> "" 
-                        else -> "" // Only hide, do not show date
+                        else -> "" 
                     }
                     text = text.replace(todayPrefix, replacement)
                 }
@@ -59,7 +59,7 @@ class CustomTimestamp : Plugin() {
                         yesterdayReplacement != null && yesterdayReplacement.isNotEmpty() ->
                             yesterdayReplacement + " "
                         yesterdayReplacement != null && yesterdayReplacement.isEmpty() -> "" 
-                        else -> "" // Only hide, do not show date
+                        else -> "" 
                     }
                     text = text.replace(yesterdayPrefix, replacement)
                 }
@@ -99,7 +99,6 @@ class CustomTimestamp : Plugin() {
                         var hour24 = hour
                         if (ampm == "PM" && hour != 12) hour24 += 12
                         if (ampm == "AM" && hour == 12) hour24 = 0
-                        // 12PM should be 12, 12AM should be 0
                         String.format("%02d:%s", hour24, minute)
                     }
                 } else {
