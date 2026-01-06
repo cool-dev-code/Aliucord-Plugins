@@ -4,26 +4,24 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.ImageView
-import com.discord.utilities.color.ColorCompat
 import androidx.cardview.widget.CardView
 import androidx.core.content.res.ResourcesCompat
+import androidx.recyclerview.widget.RecyclerView
 import com.aliucord.Constants
 import com.aliucord.Utils
 import com.aliucord.annotations.AliucordPlugin
 import com.aliucord.entities.Plugin
-import com.aliucord.patcher.*
+import com.aliucord.patcher.after
 import com.aliucord.utils.ReflectUtils
+import com.discord.databinding.WidgetGuildProfileSheetBinding
+import com.discord.utilities.color.ColorCompat
 import com.discord.widgets.channels.list.`WidgetChannelListModel$Companion$guildListBuilder$$inlined$forEach$lambda$3`
 import com.discord.widgets.guilds.profile.WidgetGuildProfileSheet
-import com.aliucord.utils.ViewUtils.findViewById
-import com.discord.databinding.WidgetGuildProfileSheetBinding
 import com.discord.widgets.guilds.profile.WidgetGuildProfileSheetViewModel
 import com.lytefast.flexinput.R
-import androidx.recyclerview.widget.RecyclerView
-
 
 @AliucordPlugin
 class ChannelBrowser : Plugin() {
@@ -52,7 +50,12 @@ class ChannelBrowser : Plugin() {
             val binding = bindingMethod.invoke(this) as WidgetGuildProfileSheetBinding
 
             val layout = binding.f.getRootView() as ViewGroup
-            val primaryActions = layout.findViewById<CardView>("guild_profile_sheet_secondary_actions")
+            val primaryActions = layout.findViewById<CardView>(
+                Utils.getResId(
+                    "guild_profile_sheet_secondary_actions",
+                    "id"
+                )
+            )
             val lay = primaryActions.getChildAt(0) as LinearLayout
 
             val alreadyHasBrowse = (0 until lay.childCount).any {
@@ -60,13 +63,8 @@ class ChannelBrowser : Plugin() {
                 v is TextView && v.text?.toString()?.contains("Browse Channels") == true
             }
             if (!alreadyHasBrowse) {
-                val changeNicknameId = lay.context.resources.getIdentifier(
-                    "guild_profile_sheet_change_nickname",
-                    "id",
-                    lay.context.packageName
-                )
-                val changeIdentityId =
-                    lay.context.resources.getIdentifier("change_identity", "id", lay.context.packageName)
+                val changeNicknameId = Utils.getResId("guild_profile_sheet_change_nickname", "id")
+                val changeIdentityId = Utils.getResId("change_identity", "id")
                 val changeNicknameView = lay.findViewById<View?>(changeNicknameId)
                 val changeIdentityView = lay.findViewById<View?>(changeIdentityId)
                 val insertIndex = when {
