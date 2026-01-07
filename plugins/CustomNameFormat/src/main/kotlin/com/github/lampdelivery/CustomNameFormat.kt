@@ -15,6 +15,7 @@ import com.discord.api.channel.Channel
 import com.discord.widgets.chat.list.adapter.WidgetChatListAdapterItemEmbed
 import com.discord.stores.StoreStream
 import com.discord.utilities.user.UserUtils
+import com.aliucord.wrappers.users.globalName
 
 @AliucordPlugin
 class CustomNameFormat : Plugin() {
@@ -91,16 +92,9 @@ class CustomNameFormat : Plugin() {
                 for ((idAny, valueAny) in mapResult) {
                     val id = idAny as? Long ?: continue
                     val value = valueAny as? String ?: continue
-                    val user = users[id]
-                    if (user != null) {
-                        val displayName = try {
-                            user.javaClass.getMethod("getGlobalName").invoke(user) as? String ?: user.username
-                        } catch (_: Throwable) {
-                            user.username
-                        }
-                        @Suppress("UNCHECKED_CAST")
-                        (mapResult as MutableMap<Any?, Any?>)[id] = getFormatted(null, displayName, user.username, value, user)
-                    }
+                    val user = users[id] ?: continue
+                    val username = user.username
+                    (mapResult as MutableMap<Any?, Any?>)[id] = getFormatted(username, value, user)
                 }
             }
         )
@@ -121,10 +115,10 @@ class CustomNameFormat : Plugin() {
                 Int::class.java
             )
             patcher.patch(getSpannableMethod, Hook { param ->
-                val user = param.args[0]
-                val username = user?.javaClass?.getMethod("getUsername")?.invoke(user) as? String ?: return@Hook
+                val user = param.args[0] as? User ?: return@Hook
+                val username = user.username
                 val res = param.args[1] as? String ?: username
-                param.args[1] = getFormatted(null, username, username, res, user as User)
+                param.args[1] = getFormatted(username, res, user)
             })
         } catch (_: Throwable) {}
 
@@ -137,10 +131,10 @@ class CustomNameFormat : Plugin() {
                 Class.forName("com.discord.models.member.GuildMember")
             )
             patcher.patch(getSecondaryNameMethod, Hook { param ->
-                val user = param.args[0]
-                val username = user?.javaClass?.getMethod("getUsername")?.invoke(user) as? String ?: return@Hook
+                val user = param.args[0] as? User ?: return@Hook
+                val username = user.username
                 val res = param.result as? String ?: username
-                param.result = getFormatted(null, username, username, res, user as User)
+                param.result = getFormatted(username, res, user)
             })
         } catch (_: Throwable) {}
 
