@@ -27,9 +27,15 @@ class CustomTimestamp : Plugin() {
             val todaySuffix = settings.getString("todaySuffix", "")
             val yesterdayPrefix = settings.getString("yesterdayPrefix", "Yesterday at ")
             val yesterdaySuffix = settings.getString("yesterdaySuffix", "")
-            val customFormat = settings.getString("customDateFormat", "MMM dd, yyyy")
+            val customFormatInput = settings.getString("customFormat", "").orEmpty().trim()
+            val customFormat = if (customFormatInput.isNotEmpty()) customFormatInput else settings.getString("customDateFormat", "MMM dd, yyyy")
             val use24Hour = settings.getBool("use24Hour", false)
-            val timeFormat = if (use24Hour) "HH:mm" else "hh:mm a"
+            val showSeconds = settings.getBool("showSeconds", false)
+            val timeFormat = if (use24Hour) {
+                if (showSeconds) "HH:mm:ss" else "HH:mm"
+            } else {
+                if (showSeconds) "hh:mm:ss a" else "hh:mm a"
+            }
 
             val todayReplacement = settings.getString("todayReplacement", null)
             if (settings.getBool("hideToday", false)) {
@@ -75,17 +81,30 @@ class CustomTimestamp : Plugin() {
             )
             var reformatted = false
 
-            for (fmt in inputFormats) {
-                try {
-                    val parsed = SimpleDateFormat(fmt, Locale.getDefault()).parse(text)
-                    if (parsed != null) {
-                        val datePart = SimpleDateFormat(customFormat, Locale.getDefault()).format(parsed)
-                        val timePart = SimpleDateFormat(timeFormat, Locale.getDefault()).format(parsed)
-                        text = "$datePart $timePart"
-                        reformatted = true
-                        break
-                    }
-                } catch (_: Throwable) {}
+            if (customFormatInput.isNotEmpty()) {
+                for (fmt in inputFormats) {
+                    try {
+                        val parsed = SimpleDateFormat(fmt, Locale.getDefault()).parse(text)
+                        if (parsed != null) {
+                            text = SimpleDateFormat(customFormat, Locale.getDefault()).format(parsed)
+                            reformatted = true
+                            break
+                        }
+                    } catch (_: Throwable) {}
+                }
+            } else {
+                for (fmt in inputFormats) {
+                    try {
+                        val parsed = SimpleDateFormat(fmt, Locale.getDefault()).parse(text)
+                        if (parsed != null) {
+                            val datePart = SimpleDateFormat(customFormat, Locale.getDefault()).format(parsed)
+                            val timePart = SimpleDateFormat(timeFormat, Locale.getDefault()).format(parsed)
+                            text = "$datePart $timePart"
+                            reformatted = true
+                            break
+                        }
+                    } catch (_: Throwable) {}
+                }
             }
 
             if (!reformatted) {

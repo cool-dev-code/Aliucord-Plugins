@@ -11,6 +11,22 @@ import com.aliucord.views.TextInput
 import com.aliucord.R
 
 class CustomTimestampSettings(private val settings: SettingsAPI) : SettingsPage() {
+    private fun setPreview(formatStr: String, view: android.widget.TextView) {
+        val now = System.currentTimeMillis()
+        val preview = try {
+            java.text.SimpleDateFormat(formatStr).format(java.util.Date(now))
+        } catch (e: Throwable) {
+            "Invalid format"
+        }
+        val spannable = android.text.SpannableStringBuilder("Formatting guide\n\nPreview: ")
+        spannable.append(preview)
+        spannable.setSpan(
+            android.text.style.URLSpan("https://docs.oracle.com/javase/7/docs/api/java/text/SimpleDateFormat.html"),
+            0, 16, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+        )
+        view.text = spannable
+        view.movementMethod = android.text.method.LinkMovementMethod.getInstance()
+    }
 
     private fun addTextInput(hint: String, initial: String, onChange: (String) -> Unit) {
         val ctx = requireContext()
@@ -36,6 +52,8 @@ class CustomTimestampSettings(private val settings: SettingsAPI) : SettingsPage(
         super.onViewBound(view)
         setActionBarTitle("Message Timestamps Settings")
         setActionBarSubtitle(null)
+        val ctx = requireContext()
+
         val todayReplacement = settings.getString("todayReplacement", "")
         val formatOptions = listOf(
             "MMM dd, yyyy",         // Mon DD, YYYY (Default)
@@ -64,10 +82,11 @@ class CustomTimestampSettings(private val settings: SettingsAPI) : SettingsPage(
         val defaultFormat = "MMM dd, yyyy"
         val currentFormat = settings.getString("customDateFormat", defaultFormat)
         var currentIndex = formatOptions.indexOf(currentFormat).let { if (it == -1) formatOptions.indexOf(defaultFormat) else it }
-        val ctx = requireContext()
+
         val dateFormatSelector = com.github.lampdelivery.Selector(ctx).apply {
             setLabel("Date Format")
             setValue(formatLabels[currentIndex])
+            isEnabled = true 
             setSelectorClickListener(View.OnClickListener {
                 val dialog = com.github.lampdelivery.SelectDialog()
                 dialog.setItems(formatLabels)
@@ -82,6 +101,23 @@ class CustomTimestampSettings(private val settings: SettingsAPI) : SettingsPage(
             })
         }
         addView(dateFormatSelector)
+
+        val customFormat = settings.getString("customFormat", "")
+        var previewText: android.widget.TextView? = null
+        addTextInput(
+            hint = "Custom Date/Time Format (overrides selector if set)",
+            initial = customFormat
+        ) {
+            settings.setString("customFormat", it)
+            previewText?.let { pv -> setPreview(if (it.isNotEmpty()) it else formatOptions[currentIndex], pv) }
+            Utils.promptRestart("Restart required to apply changes.")
+        }
+        val customFormatSpace = android.widget.Space(ctx)
+        customFormatSpace.layoutParams = android.widget.LinearLayout.LayoutParams(
+            android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+            (12 * ctx.resources.displayMetrics.density).toInt()
+        )
+        addView(customFormatSpace)
 
         addTextInput(
             hint = "Today Replacement (leave blank to remove)",
@@ -106,7 +142,7 @@ class CustomTimestampSettings(private val settings: SettingsAPI) : SettingsPage(
         }
 
         val infoText = android.widget.TextView(requireContext()).apply {
-            text = "Tip: Use %date% in the box to insert the formatted date."
+            text = "Tip: Use %date% in the box to insert the formatted date. For custom format, see SimpleDateFormat docs."
             textSize = 12f
             setTextColor(0xFF888888.toInt())
             setPadding(0, (4 * resources.displayMetrics.density).toInt(), 0, (8 * resources.displayMetrics.density).toInt())
@@ -157,5 +193,26 @@ class CustomTimestampSettings(private val settings: SettingsAPI) : SettingsPage(
                 }
             }
         )
+
+        addView(
+            Utils.createCheckedSetting(
+                ctx,
+                CheckedSetting.ViewType.SWITCH,
+                "Show Seconds",
+                "Show seconds in timestamps (e.g. 12:34:56)"
+            ).apply {
+                isChecked = settings.getBool("showSeconds", false)
+                setOnCheckedListener {
+                    settings.setBool("showSeconds", it)
+                    Utils.promptRestart("Restart required to apply changes.")
+                }
+            }
+        )
+
+        previewText = android.widget.TextView(ctx)
+        previewText!!.setTextColor(0xFF888888.toInt())
+        previewText!!.textSize = 12f
+        setPreview(if (customFormat.isNotEmpty()) customFormat else formatOptions[currentIndex], previewText!!)
+        addView(previewText)
     }
 }
