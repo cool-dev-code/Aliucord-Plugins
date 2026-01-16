@@ -17,7 +17,7 @@ subprojects {
     }
 
     configure<LibraryExtension> {
-        namespace = "com.github.cool-dev-code"
+        namespace = "com.github.cooldevcode"
         compileSdk = 36
 
         defaultConfig {
