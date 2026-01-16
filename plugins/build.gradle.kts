@@ -17,7 +17,7 @@ subprojects {
     }
 
     configure<LibraryExtension> {
-        namespace = "com.github.lampdelivery"
+        namespace = "com.github.cool-dev-code"
         compileSdk = 36
 
         defaultConfig {
@@ -38,9 +38,9 @@ subprojects {
     }
 
     configure<AliucordExtension> {
-        author("LampDelivery", 650805815623680030L, hyperlink = true)
+        author("Shuja Ahmed", 754742219587584080L, hyperlink = true)
 
-        github("https://github.com/LampDelivery/AliucordPlugins")
+        github("https://github.com/cool-dev-code/Aliucord-Plugins")
     }
 
     configure<KtlintExtension> {
