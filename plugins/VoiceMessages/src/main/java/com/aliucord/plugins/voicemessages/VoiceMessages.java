@@ -10,103 +10,131 @@ import androidx.core.content.ContextCompat;
 
 import com.aliucord.annotations.AliucordPlugin;
 import com.aliucord.entities.Plugin;
-import com.aliucord.patcher.Patcher;
 import com.aliucord.utils.DimenUtils;
-import com.discord.utilities.voice.VoiceMessageManager;
 import com.lytefast.flexinput.fragment.FlexInputFragment;
 
-@AliucordPlugin
-public class VoiceMessages extends Plugin {
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 
-    private static final String VIEW_TAG = "aliucord_voice_message_button";
+@AliucordPlugin
+public final class VoiceMessages extends Plugin {
+
+    private static final String VIEW_TAG = "aliucord_voice_message_btn";
 
     private boolean locked = false;
     private float startY = 0f;
 
+    // Reflected Discord internals
+    private Object voiceManager;
+    private Method startRecording;
+    private Method stopAndSendRecording;
+    private Method lockRecording;
+
     @Override
     public void start(Context context) {
 
-        Patcher.after(
-                FlexInputFragment.class,
-                "onViewCreated",
-                View.class,
-                android.os.Bundle.class,
-                param -> {
+        try {
+            Class<?> vmClass =
+                Class.forName("com.discord.utilities.voice.VoiceMessageManager");
 
-                    View root = (View) param.args[0];
-                    ViewGroup container = root.findViewById(
-                            context.getResources().getIdentifier(
-                                    "chat_input_container",
-                                    "id",
-                                    context.getPackageName()
-                            )
+            Field instanceField = vmClass.getDeclaredField("INSTANCE");
+            voiceManager = instanceField.get(null);
+
+            startRecording = vmClass.getDeclaredMethod("startRecording");
+            stopAndSendRecording = vmClass.getDeclaredMethod("stopAndSendRecording");
+            lockRecording = vmClass.getDeclaredMethod("lockRecording");
+
+        } catch (Throwable t) {
+            logger.error("VoiceMessageManager not found", t);
+            return;
+        }
+
+        patcher.after(
+            FlexInputFragment.class,
+            "onViewCreated",
+            View.class,
+            android.os.Bundle.class,
+            hook -> {
+
+                View root = (View) hook.args[0];
+                ViewGroup container = root.findViewById(
+                    context.getResources().getIdentifier(
+                        "chat_input_container",
+                        "id",
+                        context.getPackageName()
+                    )
+                );
+
+                if (container == null) return;
+
+                // Prevent duplicate view crash
+                View existing = container.findViewWithTag(VIEW_TAG);
+                if (existing != null) {
+                    container.removeView(existing);
+                }
+
+                ImageButton mic = new ImageButton(context);
+                mic.setTag(VIEW_TAG);
+                mic.setImageDrawable(
+                    ContextCompat.getDrawable(
+                        context,
+                        android.R.drawable.ic_btn_speak_now
+                    )
+                );
+
+                ViewGroup.MarginLayoutParams lp =
+                    new ViewGroup.MarginLayoutParams(
+                        DimenUtils.dpToPx(36),
+                        DimenUtils.dpToPx(36)
                     );
+                lp.setMarginEnd(DimenUtils.dpToPx(6));
+                mic.setLayoutParams(lp);
+                mic.setBackground(null);
 
-                    if (container == null) return;
-
-                    // 🔒 Remove previously injected button (prevents crash)
-                    View old = container.findViewWithTag(VIEW_TAG);
-                    if (old != null) container.removeView(old);
-
-                    ImageButton micButton = new ImageButton(context);
-                    micButton.setTag(VIEW_TAG);
-                    micButton.setImageDrawable(
-                            ContextCompat.getDrawable(
-                                    context,
-                                    android.R.drawable.ic_btn_speak_now
-                            )
-                    );
-
-                    ViewGroup.MarginLayoutParams lp =
-                            new ViewGroup.MarginLayoutParams(
-                                    DimenUtils.dpToPx(36),
-                                    DimenUtils.dpToPx(36)
-                            );
-                    lp.setMarginEnd(DimenUtils.dpToPx(6));
-                    micButton.setLayoutParams(lp);
-                    micButton.setBackground(null);
-
-                    VoiceMessageManager voiceManager =
-                            VoiceMessageManager.INSTANCE;
-
-                    micButton.setOnTouchListener((v, event) -> {
-
-                        switch (event.getAction()) {
+                mic.setOnTouchListener((v, e) -> {
+                    try {
+                        switch (e.getAction()) {
 
                             case MotionEvent.ACTION_DOWN:
                                 locked = false;
-                                startY = event.getRawY();
-                                voiceManager.startRecording();
+                                startY = e.getRawY();
+                                startRecording.invoke(voiceManager);
                                 return true;
 
                             case MotionEvent.ACTION_MOVE:
-                                float deltaY = startY - event.getRawY();
-                                if (!locked && deltaY > DimenUtils.dpToPx(60)) {
+                                float dy = startY - e.getRawY();
+                                if (!locked && dy > DimenUtils.dpToPx(60)) {
                                     locked = true;
-                                    voiceManager.lockRecording();
+                                    lockRecording.invoke(voiceManager);
                                 }
                                 return true;
 
                             case MotionEvent.ACTION_UP:
                             case MotionEvent.ACTION_CANCEL:
                                 if (!locked) {
-                                    voiceManager.stopAndSendRecording();
+                                    stopAndSendRecording.invoke(voiceManager);
                                 }
                                 return true;
                         }
-                        return false;
-                    });
+                    } catch (Throwable t) {
+                        logger.error("VoiceMessage invoke failed", t);
+                    }
+                    return false;
+                });
 
-                    // If locked, tapping stops recording
-                    micButton.setOnClickListener(v -> {
-                        if (locked) {
+                mic.setOnClickListener(v -> {
+                    if (locked) {
+                        try {
                             locked = false;
-                            voiceManager.stopAndSendRecording();
+                            stopAndSendRecording.invoke(voiceManager);
+                        } catch (Throwable t) {
+                            logger.error("Stop recording failed", t);
                         }
-                    });
+                    }
+                });
 
-                    container.addView(micButton, 0);
-                }
+                container.addView(mic, 0);
+            }
         );
     }
 
