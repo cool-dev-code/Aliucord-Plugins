@@ -1,123 +1,74 @@
 package com.aliucord.plugins.voicemessages;
 
 import android.content.Context;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
 
-import androidx.core.content.ContextCompat;
-
+import com.aliucord.Utils;
 import com.aliucord.annotations.AliucordPlugin;
 import com.aliucord.entities.Plugin;
 import com.aliucord.patcher.Hook;
-import com.aliucord.utils.DimenUtils;
-import com.lytefast.flexinput.fragment.FlexInputFragment;
+import com.aliucord.patcher.Patcher;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
+import de.robv.android.xposed.XC_MethodHook;
+import kotlin.Unit;
 
 @AliucordPlugin
+@SuppressWarnings("unused")
 public final class VoiceMessages extends Plugin {
 
-    private static final String VIEW_TAG = "aliucord_voice_message_button";
-
-    private Object voiceManager;
-    private Method startRecording;
-    private Method stopRecording;
+    private static final String FLEX_INPUT =
+            "com.lytefast.flexinput.fragment.FlexInputFragment";
 
     @Override
-    public void start(Context context) {
+    public void start(Context context) throws Throwable {
 
-        // Reflection (unchanged)
-        try {
-            Class<?> cls =
-                Class.forName("com.discord.utilities.voice.VoiceMessageManager");
+        Class<?> flexInput = Class.forName(FLEX_INPUT);
 
-            Field instance = cls.getDeclaredField("INSTANCE");
-            voiceManager = instance.get(null);
-
-            startRecording = cls.getDeclaredMethod("startRecording");
-            stopRecording = cls.getDeclaredMethod("stopAndSendRecording");
-
-        } catch (Throwable t) {
-            logger.error("VoiceMessages: failed to init VoiceMessageManager", t);
-            return;
-        }
-
-        // ✅ CORRECT LampDelivery Java patch
-        patcher.patch(
-            FlexInputFragment.class,
-            "onViewCreated",
-            new Class<?>[]{
-                View.class,
-                android.os.Bundle.class
-            },
-            new Hook() {
-                @Override
-                protected void after(HookParam param) {
+        Patcher.addHook(
+                flexInput.getDeclaredMethod("onViewCreated", View.class),
+                new Hook((XC_MethodHook.MethodHookParam param) -> {
 
                     View root = (View) param.args[0];
-                    ViewGroup container = root.findViewById(
-                        context.getResources().getIdentifier(
-                            "chat_input_container",
-                            "id",
-                            context.getPackageName()
-                        )
-                    );
+                    if (!(root instanceof ViewGroup)) return;
 
-                    if (container == null) return;
+                    ViewGroup group = (ViewGroup) root;
 
-                    // Remove old injected view (crash fix)
-                    View old = container.findViewWithTag(VIEW_TAG);
-                    if (old != null) {
-                        container.removeView(old);
-                    }
+                    // Prevent duplicate injection
+                    if (group.findViewWithTag("aliucord_voice_button") != null)
+                        return;
 
-                    ImageButton button = new ImageButton(context);
-                    button.setTag(VIEW_TAG);
+                    Context ctx = root.getContext();
+
+                    ImageButton button = new ImageButton(ctx);
+                    button.setTag("aliucord_voice_button");
+
                     button.setImageDrawable(
-                        ContextCompat.getDrawable(
-                            context,
-                            android.R.drawable.ic_btn_speak_now
-                        )
+                            Utils.tintDrawable(
+                                    ctx.getDrawable(
+                                            ctx.getResources().getIdentifier(
+                                                    "ic_mic_24dp",
+                                                    "drawable",
+                                                    ctx.getPackageName()
+                                            )
+                                    ),
+                                    Utils.getThemeColor(ctx, "interactive-normal")
+                            )
                     );
 
-                    ViewGroup.MarginLayoutParams lp =
-                        new ViewGroup.MarginLayoutParams(
-                            DimenUtils.dpToPx(36),
-                            DimenUtils.dpToPx(36)
-                        );
-                    lp.setMarginEnd(DimenUtils.dpToPx(6));
-                    button.setLayoutParams(lp);
                     button.setBackground(null);
+                    button.setOnClickListener(v ->
+                            Utils.showToast("Voice Messages not implemented")
+                    );
 
-                    button.setOnTouchListener((v, e) -> {
-                        try {
-                            if (e.getAction() == MotionEvent.ACTION_DOWN) {
-                                startRecording.invoke(voiceManager);
-                                return true;
-                            }
-
-                            if (e.getAction() == MotionEvent.ACTION_UP ||
-                                e.getAction() == MotionEvent.ACTION_CANCEL) {
-                                stopRecording.invoke(voiceManager);
-                                return true;
-                            }
-                        } catch (Throwable t) {
-                            logger.error("VoiceMessages invoke failed", t);
-                        }
-                        return false;
-                    });
-
-                    container.addView(button, 0);
-                }
-            }
+                    group.addView(button);
+                })
         );
     }
 
     @Override
     public void stop(Context context) {
-        patcher.unpatchAll();
+        // Hooks auto-unregister
     }
 }
