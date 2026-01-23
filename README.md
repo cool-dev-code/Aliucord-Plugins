@@ -1,4 +1,6 @@
 # AliucordPlugins
 
 ## MessageLinkCompact
-Compacts message links
+Compacts message link
+
+This is example repository
