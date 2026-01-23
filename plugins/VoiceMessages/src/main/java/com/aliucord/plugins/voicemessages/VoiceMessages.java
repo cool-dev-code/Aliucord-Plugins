@@ -19,33 +19,29 @@ import java.lang.reflect.Method;
 @AliucordPlugin
 public final class VoiceMessages extends Plugin {
 
-    private static final String VIEW_TAG = "aliucord_voice_message_btn";
+    private static final String VIEW_TAG = "aliucord_voice_message_button";
 
-    private boolean locked = false;
-    private float startY = 0f;
-
-    // Reflected Discord internals
+    // Discord internals (reflected)
     private Object voiceManager;
     private Method startRecording;
-    private Method stopAndSendRecording;
-    private Method lockRecording;
+    private Method stopRecording;
 
     @Override
     public void start(Context context) {
 
+        // ---- FIX #1: reflection instead of direct import ----
         try {
-            Class<?> vmClass =
+            Class<?> cls =
                 Class.forName("com.discord.utilities.voice.VoiceMessageManager");
 
-            Field instanceField = vmClass.getDeclaredField("INSTANCE");
-            voiceManager = instanceField.get(null);
+            Field instance = cls.getDeclaredField("INSTANCE");
+            voiceManager = instance.get(null);
 
-            startRecording = vmClass.getDeclaredMethod("startRecording");
-            stopAndSendRecording = vmClass.getDeclaredMethod("stopAndSendRecording");
-            lockRecording = vmClass.getDeclaredMethod("lockRecording");
+            startRecording = cls.getDeclaredMethod("startRecording");
+            stopRecording = cls.getDeclaredMethod("stopAndSendRecording");
 
         } catch (Throwable t) {
-            logger.error("VoiceMessageManager not found", t);
+            logger.error("VoiceMessages: failed to init VoiceMessageManager", t);
             return;
         }
 
@@ -67,15 +63,15 @@ public final class VoiceMessages extends Plugin {
 
                 if (container == null) return;
 
-                // Prevent duplicate view crash
-                View existing = container.findViewWithTag(VIEW_TAG);
-                if (existing != null) {
-                    container.removeView(existing);
+                // ---- FIX #2: remove existing injected view ----
+                View old = container.findViewWithTag(VIEW_TAG);
+                if (old != null) {
+                    container.removeView(old);
                 }
 
-                ImageButton mic = new ImageButton(context);
-                mic.setTag(VIEW_TAG);
-                mic.setImageDrawable(
+                ImageButton button = new ImageButton(context);
+                button.setTag(VIEW_TAG);
+                button.setImageDrawable(
                     ContextCompat.getDrawable(
                         context,
                         android.R.drawable.ic_btn_speak_now
@@ -88,52 +84,28 @@ public final class VoiceMessages extends Plugin {
                         DimenUtils.dpToPx(36)
                     );
                 lp.setMarginEnd(DimenUtils.dpToPx(6));
-                mic.setLayoutParams(lp);
-                mic.setBackground(null);
+                button.setLayoutParams(lp);
+                button.setBackground(null);
 
-                mic.setOnTouchListener((v, e) -> {
+                button.setOnTouchListener((v, e) -> {
                     try {
-                        switch (e.getAction()) {
+                        if (e.getAction() == MotionEvent.ACTION_DOWN) {
+                            startRecording.invoke(voiceManager);
+                            return true;
+                        }
 
-                            case MotionEvent.ACTION_DOWN:
-                                locked = false;
-                                startY = e.getRawY();
-                                startRecording.invoke(voiceManager);
-                                return true;
-
-                            case MotionEvent.ACTION_MOVE:
-                                float dy = startY - e.getRawY();
-                                if (!locked && dy > DimenUtils.dpToPx(60)) {
-                                    locked = true;
-                                    lockRecording.invoke(voiceManager);
-                                }
-                                return true;
-
-                            case MotionEvent.ACTION_UP:
-                            case MotionEvent.ACTION_CANCEL:
-                                if (!locked) {
-                                    stopAndSendRecording.invoke(voiceManager);
-                                }
-                                return true;
+                        if (e.getAction() == MotionEvent.ACTION_UP ||
+                            e.getAction() == MotionEvent.ACTION_CANCEL) {
+                            stopRecording.invoke(voiceManager);
+                            return true;
                         }
                     } catch (Throwable t) {
-                        logger.error("VoiceMessage invoke failed", t);
+                        logger.error("VoiceMessages invoke failed", t);
                     }
                     return false;
                 });
 
-                mic.setOnClickListener(v -> {
-                    if (locked) {
-                        try {
-                            locked = false;
-                            stopAndSendRecording.invoke(voiceManager);
-                        } catch (Throwable t) {
-                            logger.error("Stop recording failed", t);
-                        }
-                    }
-                });
-
-                container.addView(mic, 0);
+                container.addView(button, 0);
             }
         );
     }
